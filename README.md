@@ -59,7 +59,7 @@ for number in range(5):       #range返回一个列表
 ![image](https://github.com/15529343201/Tornado/blob/master/image/yield2.PNG)<br>
 &ensp;&ensp;每次调用迭代器的next()函数,将执行迭代器函数,并返回yield的结果作为迭代返回元素。当迭代器函数return时,迭代器会抛出StopIteration异常使迭代终止。
 &ensp;&ensp;在Python中,使用yield关键字定义的迭代器也被称为"生成器"<br>
-### 协程<br>
+### **3.协程**<br>
 &emsp;&emsp;使用Tornado协程可以开发出类似同步代码的异步行为。同时,因为协程本身不使用线程,所以减少了线程上下文切换的开销,是一种更高效的开发模式。<br>
 1.编写协程函数<br>
 ```
