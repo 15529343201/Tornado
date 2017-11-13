@@ -59,4 +59,105 @@ for number in range(5):       #range返回一个列表
 ![image](https://github.com/15529343201/Tornado/blob/master/image/yield2.PNG)<br>
 &ensp;&ensp;每次调用迭代器的next()函数,将执行迭代器函数,并返回yield的结果作为迭代返回元素。当迭代器函数return时,迭代器会抛出StopIteration异常使迭代终止。
 &ensp;&ensp;在Python中,使用yield关键字定义的迭代器也被称为"生成器"
+###协程<br>
+&emsp;&emsp;使用Tornado协程可以开发出类似同步代码的异步行为。同时,因为协程本身不使用线程,所以减少了线程上下文切换的开销,是一种更高效的开发模式。<br>
+1.编写协程函数<br>
+```
+from tornado import gen           #引入协程库gen
+from tornado.httpclient import AsyncHTTPClient
+
+@gen.coroutine                    #使用gen.coroutine装饰器
+def coroutine_visit():
+    http_client=AsyncHTTPClient()
+    response=yield http_client.fetch("www.baidu.com")
+    print response.body
+```
+&emsp;&emsp;本例中仍然使用了异步客户端AsyncHTTPClient进行页面访问,装饰器@gen.coroutine声明这是一个协程函数。由于yield关键字的使用,使得代码中不用在编写回调函数用于处理访问结果,而可以直接在yield语句的后面编写结果处理语句。<br>
+2.调用协程函数<br>
+&emsp;&emsp;由于Tornado协程基于Python的yield关键字实现,所以不能像调用普通函数一样调用协程函数,比如用下面的代码不能调用之前编写的coroutine_visit()协程函数:<br>
+```
+def bad_call():
+    coroutine_visit()
+```
+&emsp;&emsp;协程函数可以通过以下三种方式进行调用。
+
+ - 在本身是协程的函数内通过yield关键字调用
+ - 在IOLoop尚未启动时,通过IOLoop的run_sync()函数调用
+ - 在IOLoop已经启动时,通过IOLoop的spawn_callback()函数调用。
+&emsp;&emsp;下面是一个"通过协程函数调用协程函数"的例子:
+```
+from tornado import gen
+
+@gen.coroutine
+def outer_coroutine():
+    print "start call another coroutine"
+    yeild cortoutine_visit()
+    print "end of outer_cortoutine"
+```
+&emsp;&emsp;本例中outer_coroutine和coroutine_visit都是协程函数,所以它们之间可以通过yield关键字进行调用。<br>
+&emsp;&emsp;IOLoop是Tornado的主事件循环对象,Tornado程序通过它监听外部客户端的访问请求,并执行相应的操作。当程序尚未进入IOLoop的running状态时,可以通过run_sync()函数调用协程函数,比如:<br>
+```
+from tornado.ioloop import IOLoop
+
+def func_normal():
+    print "start to call a coroutine"
+    IOLoop.current().run_sync(lambda:coroutine_visit())
+    print "end of calling a coroutine"
+```
+&emsp;&emsp;本例中spawn_callback()函数将不会等待被调用协程执行完成,所以spawn_callback()之前和之后的print语句将会被连续执行,而coroutine_visit本身将会由IOLoop在合适的时机进行调用。
+&emsp;&emsp;IOLoop的spawn_callback()函数没有为开发者提供获取协程函数调用返回值的方法,所以只能用spawn_callback()调用没有返回值的协程函数。<br>
+3.在协程中调用阻塞函数<br>
+&emsp;&emsp;在协程中直接调用阻塞函数会影响协程本身的性能,所以Tornado提供了在协程中利用线程池调度阻塞函数,从而不影响协程本身继续执行的方法。示例代码如下:<br>
+```
+from concurrent.futures import ThreadPoolExecutor
+
+thread_pool=ThreadPoolExecutor(2)
+
+def mySleep(count):
+    import time
+    for I in range(count):
+        time.sleep(1)
+        
+@gen.coroutine
+def call_blocking():
+    print "start of call_blocking"
+    yield thread_pool.submit(mySleep,10)
+    print "end of call_blocking"
+```
+&emsp;&emsp;代码中首先引用了concurrent.futures中的ThreadPoolExecutor类,并实例化了一个有两个线程的线程池thread_pool。在需要调用阻塞函数的协程call_blocking中,使用thread_pool.submit调用阻塞函数,并通过yield返回。这样便不会阻塞协程所在线程的继续执行,也保证了阻塞函数前后代码的执行顺序。<br>
+4.在协程中等待多个异步调用<br>
+&emsp;&emsp;其实,Tornado允许在协程中用一个yield关键字等待多个异步调用,只需把这些调用用列表(list)或字典(dictionary)的方式传递给yield关键字即可。
+&emsp;&emsp;使用列表方式传递多个异步调用的示例代码如下:
+```
+from tornado import gen
+from tornado.httpclient import AsyncHTTPClient
+
+@gen.coroutine
+def coroutine_visit():
+    http_client=AsyncHTTPClient()
+    list_response=yield [http_client.fetch("www.baidu.com"),
+        http_client.fetch("www.163.com"),
+        http_client.fetch("www.google.com")
+    ]
+    
+for response in list_response:
+    print response.body
+```
+&emsp;&emsp;在代码中仍然用@gen.coroutine装饰器定义协程,在需要yield的地方用列表传递若干个异步调用,只有在列表中的所有调用都执行完成后,yield才会返回并继续执行。yield以列表方式返回N个调用的输出结果,可以通过for语句逐个访问。<br>
+&emsp;&emsp;用字典方式传递多个异步调用的示例代码如下:
+```
+from tornado import gen
+from tornado.httpclient import AsyncHTTPClient
+
+@gen.coroutine
+def coroutine_visit():
+    http_client=AsyncHTTPClient()
+    dict_response=yield {"baidu":http_client.fetch("www.baidu.com"),
+        "163":http_client.fetch("www.163.com"),
+        "google":http_client.fetch("www.google.com")
+    }
+
+print dict_respone["sina"].body
+```
+&emsp;&emsp;本例中以字典形式给yield关键字传递异步调用要求,并且Tornado以字典形式返回异步调用结果。
 
