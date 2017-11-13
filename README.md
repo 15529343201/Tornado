@@ -1,5 +1,5 @@
-#一,Tornado概述
-####**1,Tornado介绍**
+#一,Tornado概述<br>
+####**1,Tornado介绍**<br>
 &ensp;&ensp;Tornado是使用Python编写的一个强大的可扩展的Web服务器。它在处理高网络流量时表现足够强健,却在创建和编写时有着足够的轻量级,并能够被用在大量的应用和工具中。Tornado作为FriendFeed网站的基础框架,与2009年9月10日发布,目前已经获得了很多社区的支持,并且在一系列不同的场合中得到应用。除FriendFeed和Fackbook外,还有很多公司在生产上转向Tornado,包括Quora,Turntable.fm,Bit.ly,Hipmunk及My Yearbook等。<br>
 &ensp;&ensp;相对于其他Python网络框架,Tornado有如下特点。
 
@@ -37,7 +37,7 @@ def asynchronous_visit():
     http_client=AsyncHTTPClient()
     http_client.fetch("www.baidu.com",callback=handle_response)
 ```
-&ensp;&ensp;AsyncHTTPClient是Tornado的异步访问HTTP客户端。在上述代码的asynchronous_visit()函数中使用AsyncHTTPClient对第三方网站进行异步访问,http_client.fetch()函数会在调用后立刻返回而无需等待实际访问的完成,从而导致asynchronous_visit()也会立刻执行完成。当对www.baidu.com的访问实际完成后,AsyncHTTPClient会调用callback参数指定的函数,开发者可以在其中写入处理访问结果的逻辑代码。
+&ensp;&ensp;AsyncHTTPClient是Tornado的异步访问HTTP客户端。在上述代码的asynchronous_visit()函数中使用AsyncHTTPClient对第三方网站进行异步访问,http_client.fetch()函数会在调用后立刻返回而无需等待实际访问的完成,从而导致asynchronous_visit()也会立刻执行完成。当对www.baidu.com的访问实际完成后,AsyncHTTPClient会调用callback参数指定的函数,开发者可以在其中写入处理访问结果的逻辑代码。<br>
 ####**2.Python关键字yield**
 
  1. 迭代器
@@ -47,16 +47,16 @@ def asynchronous_visit():
 for number in range(5):       #range返回一个列表
     print number
 ```
-&ensp;&ensp;其中的range()返回一个包含指定元素的集合,而for语句将其封装成一个迭代器后访问。使用iter()调用可以将列表,集合转换为迭代器,比如:
+&ensp;&ensp;其中的range()返回一个包含指定元素的集合,而for语句将其封装成一个迭代器后访问。使用iter()调用可以将列表,集合转换为迭代器,比如:<br>
 ![image](https://github.com/15529343201/Tornado/blob/master/image/iter1.PNG)
 &ensp;&ensp;代码中的t即为迭代器。
-&ensp;&ensp;迭代器与普通Python对象的区别是迭代器有一个netx()方法,每次调用该方法可以返回一个元素。调用者(比如for语句)可以通过不断调用next()方法来逐个访问集合元素。比如:
+&ensp;&ensp;迭代器与普通Python对象的区别是迭代器有一个netx()方法,每次调用该方法可以返回一个元素。调用者(比如for语句)可以通过不断调用next()方法来逐个访问集合元素。比如:<br>
 ![image](https://github.com/15529343201/Tornado/blob/master/image/iter2.PNG)
  2. 使用yield
-&ensp;&ensp;迭代器在Python编程中的使用范围很广,那么开发者如何定制自己的迭代器呢?答案是使用yield关键字。调用任何定义中包含yield关键字的函数都不会执行该函数,而会获得一个对应该函数的迭代器。
+&ensp;&ensp;迭代器在Python编程中的使用范围很广,那么开发者如何定制自己的迭代器呢?答案是使用yield关键字。调用任何定义中包含yield关键字的函数都不会执行该函数,而会获得一个对应该函数的迭代器。<br>
 ![image](https://github.com/15529343201/Tornado/blob/master/image/yield1.PNG)
-&ensp;&ensp;执行该部分代码的结果如下:
-![image](https://github.com/15529343201/Tornado/blob/master/image/yield2.PNG)
+&ensp;&ensp;执行该部分代码的结果如下:<br>
+![image](https://github.com/15529343201/Tornado/blob/master/image/yield2.PNG)<br>
 &ensp;&ensp;每次调用迭代器的next()函数,将执行迭代器函数,并返回yield的结果作为迭代返回元素。当迭代器函数return时,迭代器会抛出StopIteration异常使迭代终止。
 &ensp;&ensp;在Python中,使用yield关键字定义的迭代器也被称为"生成器"
 
