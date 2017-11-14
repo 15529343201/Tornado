@@ -229,6 +229,10 @@ http://xx.xx.xx.xx/entry/2015-09-10
 ```
 http://xx.xx.xx.xx/entry
 ```
+![image](https://github.com/15529343201/Tornado/blob/master/image/basic1.PNG)<br>
+![image](https://github.com/15529343201/Tornado/blob/master/image/basic2.PNG)<br>
+![image](https://github.com/15529343201/Tornado/blob/master/image/basic3.PNG)<br>
+![image](https://github.com/15529343201/Tornado/blob/master/image/basic4.PNG)<br>
 &emsp;&emsp;对于需要匹配客户端未传入时的路径,则需要用如下方法改变URL路径和对get()函数的定义:<br>
 ```
 # url handler
