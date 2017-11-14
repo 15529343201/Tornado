@@ -160,7 +160,7 @@ def coroutine_visit():
 print dict_respone["sina"].body
 ```
 &emsp;&emsp;本例中以字典形式给yield关键字传递异步调用要求,并且Tornado以字典形式返回异步调用结果。
-# **实战演练:开发Tornado网站**
+# **三,实战演练:开发Tornado网站**
 ### **1.网站结构**
 示例:通过如下HelloWorld程序学习Tornado网站的基本结构:
 ```
@@ -189,7 +189,7 @@ if __name__=="__main__":
 ```
 ![image](https://github.com/15529343201/Tornado/blob/master/image/HelloWorld1.PNG)<br>
 ![image](https://github.com/15529343201/Tornado/blob/master/image/HelloWorld2.PNG)<br>
-&emsp;&emsp;下面逐行解析上面的代码做了些什么。
+&emsp;&emsp;下面逐行解析上面的代码做了些什么。<br>
 &emsp;&emsp;(1)首先通过import语句引入tornado包中的ioloop和web类。引入这两个类是Tornado程序的基础。<br>
 &emsp;&emsp;(2)实现一个web.RequestHandler子类,重载其中的get()函数,该函数负责相应定位到该RequestHandler的HTTP GET请求的处理。本例中简单的通过self.write()函数输出"Hello World"。<br>
 &emsp;&emsp;(3)定义了make_app()函数,该函数返回一个web.Application对象。该对象的第1个参数用于定义Tornado程序的路由映射。本例将对根URL的访问映射到了RequestHandler子类MainHandler中。<br>
