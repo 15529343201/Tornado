@@ -197,7 +197,7 @@ if __name__=="__main__":
 &emsp;&emsp;(5)用tornado.ioloop.IOLoop.current().start()启动IOLoop,该函数将一直运行且不退出,用于处理完所有客户端的访问请求。
 ### **2.路由解析**
 &emsp;&emsp;向web.Application对象传递的第1个参数URL路由映射列表的配置方式与Django类似,用正则字符串进行路由匹配。Tornado的路由字符串有两种:固定字串路径和参数字串路径。
-##### **1.固定字串路径**
+#### **1.固定字串路径**
 &emsp;&emsp;固定字串即是普通的字符串固定匹配,比如:<br>
 ```
 Handlers=[("/",MainHandler),               #只匹配根路径
@@ -205,7 +205,7 @@ Handlers=[("/",MainHandler),               #只匹配根路径
         ("/entry/2015",Entry2015Handler),  #只匹配/entry/2015
 ]
 ```
-##### **2.参数字串路径**
+#### **2.参数字串路径**
 &emsp;&emsp;参数字串可以将具备一定模式的路径映射到同一个RequesetHandler中处理,其中路径中的参数部分用小括号"()"标识,下面是一个参数路径的例子。<br>
 ```
 # url handler
@@ -219,7 +219,7 @@ class EntryHandler(tornado.web.RequestHandler):
         self.render("entry.html",entry=entry)
 ```
 &emsp;&emsp;本例中用"/entry([^/]+)"定义"以/entry/开头的URL"模式,小括号中的内容是正则表达式。URL尾部的变量部分以参数形式传递给RequestHandler的get()函数,本例中将该参数命名为slug。<br>
-##### **3.带默认值的参数路径**
+#### **3.带默认值的参数路径**
 &emsp;&emsp;之前例子中的handlers=[(r"/entry/([^/]+)",EntryHandler),]模式定义了客户端必须输入路径参数。比如,其能够匹配如下路径:
 ```
 http://xx.xx.xx.xx/entry/abc
@@ -241,8 +241,8 @@ class EntryHandler(tornado.web.RequestHandler):
             raise tornado.web.HTTPError(404)
         self.render("entry.html",entry=entry)
 ```
-&emsp;&mesp;本例中首先用星号"*"取代加号"+"定义了URL模式"/entry/([^/]*)",然后为RequestHandler子类的get()函数的slug参数配置了默认值default。
-##### **4.多参数路径**
+&emsp;&emsp;本例中首先用星号"*"取代加号"+"定义了URL模式"/entry/([^/]*)",然后为RequestHandler子类的get()函数的slug参数配置了默认值default。
+#### **4.多参数路径**
 &emsp;&emsp;参数路径还允许在一个URL模式中定义多个可变参数,比如:<br>
 ```
 handlers  = [
