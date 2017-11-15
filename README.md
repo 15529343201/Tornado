@@ -370,7 +370,7 @@ LANGUAGE:Chinese
 **(5)RequestHandler.finish(chunk=None)**<br>
 &emsp;&emsp;本方法通知Tornado:Response的生成工作完成,chunk参数是需要传递给客户端的HTTP body。调用finish()后,Tornado将向客户端发送HTTP Response。本方法适用于对RequestHandler的异步请求处理。<br>
 &emsp;&emsp;**注意**:在同步或协程访问处理的函数中,无需调用finish()函数。<br>
-**(6)ReqeustHandler.render(template_name,**kwargs)**<br>
+**(6)ReqeustHandler.render(template_name,\**kwargs)**<br>
 &emsp;&emsp;用给定的参数渲染模板,可以在本函数中传入模板文件名称和模板参数,比如:
 ```
 import tornado.web
