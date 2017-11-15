@@ -258,7 +258,7 @@ class DetailHandler(tornado.web.RequestHandler):
 ```
 ### **3.RequestHandler**
 #### **1.接入点函数**
-**(1)RequestHandler.initialize()**
+**(1)RequestHandler.initialize()**<br>
 &emsp;&emsp;该方法被子类重写,实现了RequestHandler子类实例的初识化过程。可以为该函数传递参数,参数来源于配置URL映射时的定义。比如:
 ```
 from tornado.web import RequestHandler
@@ -369,7 +369,7 @@ LANGUAGE:Chinese
 &emsp;&emsp;将给定的块作为HTTP Body发送给客户端。在一般情况下,用本函数输出字符串给客户端。如果给定的块是一个字典,则会将这个块以JSON格式发送给客户端,同时将HTTP Header中的Content_Type设置成application/json。
 **(5)RequestHandler.finish(chunk=None)**<br>
 &emsp;&emsp;本方法通知Tornado:Response的生成工作完成,chunk参数是需要传递给客户端的HTTP body。调用finish()后,Tornado将向客户端发送HTTP Response。本方法适用于对RequestHandler的异步请求处理。<br>
-&emsp;&emsp;**注意**:在同步或协程访问处理的函数中,无需调用finish()函数。
+&emsp;&emsp;**注意**:在同步或协程访问处理的函数中,无需调用finish()函数。<br>
 **(6)ReqeustHandler.render(template_name,**kwargs)**<br>
 &emsp;&emsp;用给定的参数渲染模板,可以在本函数中传入模板文件名称和模板参数,比如:
 ```
@@ -379,8 +379,8 @@ class MainHandler(tornado.web.RequestHandler):
         items=["Python","C++","Java"]
         self.render["template.html",title="Tornado Templates",items=items)
 ```
-&emsp;&emsp;render()的第一个参数是对模板文件的命名,之后以命名参数的形式传入多个模板参数。
-&emsp;&emsp;Tornado的基本模板语法与Django相同,但是功能弱化,高级过滤器不可用。
+&emsp;&emsp;render()的第一个参数是对模板文件的命名,之后以命名参数的形式传入多个模板参数。<br>
+&emsp;&emsp;Tornado的基本模板语法与Django相同,但是功能弱化,高级过滤器不可用。<br>
 **(7)RequestHandler.redirect(url,permanent=False,status=None)**<br>
 &emsp;&emsp;进行页面重定向。在RequestHandler处理过程中,可以随时调用redirect()函数进行页面重定向,比如:
 ```
@@ -400,7 +400,7 @@ class LoginHandler(tornado.web.RequestHandler):
             error_msg=u"?error="+tornado.escape.url_escape("Login incorrect.")
             self.redirect(u"/login"+error_msg)
 ```
-&emsp;&emsp;在本例LoginHandler的post处理函数中,根据验证是否成功将客户端重定向到不同的页面;如果成功则重定向到next参数所指向的URL;如果不成功,则重定向到"/login"页面。
+&emsp;&emsp;在本例LoginHandler的post处理函数中,根据验证是否成功将客户端重定向到不同的页面;如果成功则重定向到next参数所指向的URL;如果不成功,则重定向到"/login"页面。<br>
 **(8)RequestHandler.clear()**<br>
 &emsp;&emsp;清空所有在本次请求中之前写入的Header和Body内容。比如:
 ```
@@ -411,8 +411,8 @@ class DetailHandler(tornado.web.RequestHandler):
         self.clear()
         self.set_header("LANGUAGE","France")
 ```
-&emsp;&emsp;最后的Header中将不包括参数NUMBER。
+&emsp;&emsp;最后的Header中将不包括参数NUMBER。<br>
 **(9)RequestHandler.set_cookie(name,value)**<br>
-&emsp;&emsp;按键/值对设置Response中的Cookie值。
+&emsp;&emsp;按键/值对设置Response中的Cookie值。<br>
 **(10)RequestHandler.clear_all_cookies(path='/',domain=None)**<br>
-&emsp;&emsp;清空本次请求中的所有Cookie。
+&emsp;&emsp;清空本次请求中的所有Cookie。<br>
