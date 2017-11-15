@@ -279,9 +279,9 @@ app=Application([
 ])
 ```
 &emsp;&emsp;本例中的initialize有参数database,该参数有Application定义URL映射时以dict方式给出。<br>
-**(2)RequestHandler.prepare(),RequestHandler.on_finish()**
+**(2)RequestHandler.prepare(),RequestHandler.on_finish()**<br>
 &emsp;&emsp;prepare()方法用于调用请求处理(get,post等)方法之前的初始化处理。而on_finish()用于请求处理结束后的一些清理工作。这两种方法一个在处理前,一个在处理后,可以根据实际需要进行重写。通常用prepare()方法做资源初始化操作,而用on_finish()方法可做清理对象占用的内存或者关闭数据库连接等工作。<br>
-**(3)HTTP Action处理函数**
+**(3)HTTP Action处理函数**<br>
 &emsp;&emsp;每个HTTP Action在RequestHandler中都以单独的函数进行处理。
 
  - RequestHandler.get(*args,**kwargs)
@@ -295,16 +295,16 @@ app=Application([
 &emsp;&emsp;每个处理函数都以它们对应的HTTP Action小写的方式命名,此处不再赘述器应用方法。
 #### **2.输入捕获**
 &emsp;&emsp;输入捕获是指在RequestHandler中用于获取客户端输入的工具函数和属性,比如获取URL查询字符串,Post提交参数。
-**(1)RequestHandler.get_argument(name),RequestHandler.get_arguments(name)**
+**(1)RequestHandler.get_argument(name),RequestHandler.get_arguments(name)**<br>
 &emsp;&emsp;都是返回给定参数的值。get_argument获取单个值;而get_arguments是针对参数存在多个值的情况下使用的,返回多个值的列表。<br>
 &emsp;&emsp;用get_argument/get_arguments()方法获取的是URL查询字符串参数与Post提交参数的参数合集。
-**(2)RequestHandler.get_query_argument(name),RequestHandler.get_query_arguments(name)**
+**(2)RequestHandler.get_query_argument(name),RequestHandler.get_query_arguments(name)**<br>
 &emsp;&emsp;它们与get_argument,get_arguments的功能类似,但是仅从URL查询参数中获取参数值。
-**(3)RequestHandler.get_body_argument(name),RequestHandler.get_body_arguments(name)**
+**(3)RequestHandler.get_body_argument(name),RequestHandler.get_body_arguments(name)**<br>
 &emsp;&emsp;与get_argument,get_arguments功能类似,但是仅从Post提交参数中获取参数值。
-**(4)RequestHandler.get_cookie(name,default=None)**
+**(4)RequestHandler.get_cookie(name,default=None)**<br>
 &emsp;&emsp;根据Cookie名称获取Cookie值。<br>
-**(5)RequestHandler.request**
+**(5)RequestHandler.request**<br>
 &emsp;&emsp;返回tornado.httputil.HTTPServerRequest对象实例的属性,通过该对象可以获取关于HTTP请求的一切信息,比如:
 ```
 import tornado.web
@@ -332,9 +332,9 @@ cookies | 客户端提交的Cookie字典
 
 #### **3.输出响应函数**
 &emsp;&emsp;输出响应函数是指一组为客户端生成处理结果的工具函数,开发者调用它们以控制URL的处理结果。常用的输出响应函数如下。<br>
-**(1)RequestHandler.set_status(status_code,reason=None)**
+**(1)RequestHandler.set_status(status_code,reason=None)**<br>
 &emsp;&emsp;设置HTTP Response中的返回码。如果有描述性的语句,则可以赋值给reason参数。
-**(2)RequestHandler.set_header(name,value)**
+**(2)RequestHandler.set_header(name,value)**<br>
 &emsp;&emsp;以键值对的方式设置HTTP Response中的HTTP头参数。使用set_header配置的Header值将覆盖之前配置的Header,比如:
 ```
 import tornado.web
@@ -349,7 +349,7 @@ class DetailHandler(tornado.web.RequestHandler):
 NUMBER:9
 LANGUAGE:Chinese
 ```
-**(3)RequestHandler.add_header(name,value)**
+**(3)RequestHandler.add_header(name,value)**<br>
 &emsp;&emsp;以键值对的方式设置HTTP Response中的HTTP头参数。与set_header不同的是add_header配置的Header值将不会覆盖之前配置的Header,比如:
 ```
 import tornado.web
@@ -365,12 +365,12 @@ NUMBER:8
 LANGUAGE:France
 LANGUAGE:Chinese
 ```
-**(4)RequestHandler.write(chunk)**
+**(4)RequestHandler.write(chunk)**<br>
 &emsp;&emsp;将给定的块作为HTTP Body发送给客户端。在一般情况下,用本函数输出字符串给客户端。如果给定的块是一个字典,则会将这个块以JSON格式发送给客户端,同时将HTTP Header中的Content_Type设置成application/json。
-**(5)RequestHandler.finish(chunk=None)**
+**(5)RequestHandler.finish(chunk=None)**<br>
 &emsp;&emsp;本方法通知Tornado:Response的生成工作完成,chunk参数是需要传递给客户端的HTTP body。调用finish()后,Tornado将向客户端发送HTTP Response。本方法适用于对RequestHandler的异步请求处理。<br>
 &emsp;&emsp;**注意**:在同步或协程访问处理的函数中,无需调用finish()函数。
-**(6)ReqeustHandler.render(template_name,**kwargs)**
+**(6)ReqeustHandler.render(template_name,**kwargs)**<br>
 &emsp;&emsp;用给定的参数渲染模板,可以在本函数中传入模板文件名称和模板参数,比如:
 ```
 import tornado.web
@@ -381,7 +381,7 @@ class MainHandler(tornado.web.RequestHandler):
 ```
 &emsp;&emsp;render()的第一个参数是对模板文件的命名,之后以命名参数的形式传入多个模板参数。
 &emsp;&emsp;Tornado的基本模板语法与Django相同,但是功能弱化,高级过滤器不可用。
-**(7)RequestHandler.redirect(url,permanent=False,status=None)**
+**(7)RequestHandler.redirect(url,permanent=False,status=None)**<br>
 &emsp;&emsp;进行页面重定向。在RequestHandler处理过程中,可以随时调用redirect()函数进行页面重定向,比如:
 ```
 import tornado.web
@@ -401,7 +401,7 @@ class LoginHandler(tornado.web.RequestHandler):
             self.redirect(u"/login"+error_msg)
 ```
 &emsp;&emsp;在本例LoginHandler的post处理函数中,根据验证是否成功将客户端重定向到不同的页面;如果成功则重定向到next参数所指向的URL;如果不成功,则重定向到"/login"页面。
-**(8)RequestHandler.clear()**
+**(8)RequestHandler.clear()**<br>
 &emsp;&emsp;清空所有在本次请求中之前写入的Header和Body内容。比如:
 ```
 import tornado.web
@@ -412,7 +412,7 @@ class DetailHandler(tornado.web.RequestHandler):
         self.set_header("LANGUAGE","France")
 ```
 &emsp;&emsp;最后的Header中将不包括参数NUMBER。
-**(9)RequestHandler.set_cookie(name,value)**
+**(9)RequestHandler.set_cookie(name,value)**<br>
 &emsp;&emsp;按键/值对设置Response中的Cookie值。
-**(10)RequestHandler.clear_all_cookies(path='/',domain=None)**
+**(10)RequestHandler.clear_all_cookies(path='/',domain=None)**<br>
 &emsp;&emsp;清空本次请求中的所有Cookie。
