@@ -416,3 +416,152 @@ class DetailHandler(tornado.web.RequestHandler):
 &emsp;&emsp;按键/值对设置Response中的Cookie值。<br>
 **(10)RequestHandler.clear_all_cookies(path='/',domain=None)**<br>
 &emsp;&emsp;清空本次请求中的所有Cookie。<br>
+### **4.异步化及协程化**
+&emsp;&emsp;在本节之前学习的例子都是用同步的方法处理用户的请求,即在RequestHandler的get()或post()函数中完成所有处理,当退出get(),post()等函数后马上向客户端返回Response。但是当处理逻辑比较复杂或需要等待外部I/O时,这样的处理机制会阻塞服务器线程,所以并不适合大量客户端的高并发请求场景。<br>
+&emsp;&emsp;Tornado有两种方式可改变同步的处理流程。
+
+ - 异步化:针对RequestHandler的处理函数使用@tornado.web.asynchronous修饰器,将默认的同步机制改为异步机制。
+ - 协程化:针对RequestHandler的处理函数使用@tornado.gen.coroutine修饰器,将默认的同步机制改为协程机制
+
+**1.异步化**
+&emsp;&emsp;异步化的RequestHandler处理如下:
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+
+import tornado.ioloop
+import tornado.web
+import tornado.httpclient
+
+class MainHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    def get(self):
+        http = tornado.httpclient.AsyncHTTPClient()
+        http.fetch("http://www.baidu.com",
+                   callback=self.on_response)
+
+    def on_response(self, response):
+        if response.error: raise tornado.web.HTTPError(500)
+        self.write(response.body)
+        self.finish()
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+    ])
+
+def main():
+    app = make_app()
+    app.listen(8888)
+    tornado.ioloop.IOLoop.current().start()
+
+if __name__ == "__main__":
+    main()
+```
+![image](https://github.com/15529343201/Tornado/blob/master/image/7-3.PNG)<br>
+&emsp;&emsp;本例中用装饰器tornado.web.asynchronous定义了HTTP访问处理函数get()。这样,当get()函数返回时,对该HTTP访问的请求尚未完成,所以Tornado无法发送HTTP Response给客户端。只有当在随后的on_response()中的finish()函数被调用时,Tornado才知道本次处理已完成,可以发送Response给客户端。
+&emsp;&emsp;异步编程虽然提高了服务器的并发能力,但如本例所示,在编程方法上较同步方法显得繁琐。<br>
+**2.协程化**
+&emsp;&emsp;Tornado协程结合了同步处理和异步处理的优点,使得代码既清晰易懂,又能够适应海量客户端的高并发请求。
+&emsp;&emsp;协程的编程方法举例如下:
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+
+import tornado.ioloop
+import tornado.web
+import tornado.httpclient
+
+
+class MainHandler(tornado.web.RequestHandler):
+    @tornado.gen.coroutine
+    def get(self):
+        http = tornado.httpclient.AsyncHTTPClient()
+        response = yield http.fetch("http://www.baidu.com")
+        self.write(response.body)
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+    ])
+
+def main():
+    app = make_app()
+    app.listen(8888)
+    tornado.ioloop.IOLoop.current().start()
+
+if __name__ == "__main__":
+    main()
+```
+![image](https://github.com/15529343201/Tornado/blob/master/image/7-3.PNG)<br>
+&emsp;&emsp;本例所示仍然是一个转发网站内容的处理器,代码量与相应的同步版差不多。协程化的关键技术点如下。
+
+ - 用tornado.gen.coroutine装饰MainHandler的get(),post()等处理函数。
+ - 使用异步对象处理耗时操作,比如本例的AsyncHTTPClient。
+ - 调用yield关键字获取异步对象的处理结果。
+# **用户身份认证框架**
+&emsp;&emsp;用户身份认证是几乎所有网站的必要功能,对于Tornado的开发源头FriendFeed和Facebook这样的社交网站尤其如此,所以Tornado框架本身较其他Python框架集成了最为丰富的用户身份验证功能。使用该框架,开发者能够快速开发出既安全又强大的用户身份认证机制。
+### **1.安全Cookie机制**
+&emsp;&emsp;Cookie是很多网站为了辨别用户的身份而储存在用户本地终端(Client Side)的数据,定义与RFC2109。在Tornado中使用RequestHandler.get_cookie(),RequestHandler.get_cookie()可以方便的对Cookie进行读写,比如:
+```
+import tornado.web
+session_id=1
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        if not self.get_cookie("session"):
+            self.set_cookie("session",str(session_id))
+                session_id=session_id+1
+            self.write("Your session got a new session!")
+        else:
+            self.write("Your session was set!")
+```
+&emsp;&emsp;本例中用get_cookie()函数判断Cookie名"session"是否存在,如果不存在则为其赋予新的session_id。
+&emsp;&emsp;因为Cookie总是被保存在客户端,所以如何保证其不被篡改是服务端必须解决的问题。Tornado提供了为Cookie信息加密的机制,使得客户端无法随意解析和修改Cookie的键值。
+&emsp;&emsp;一个使用安全Cookie的网站例子如下所示:
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+import tornado.web
+import tornado.ioloop
+
+session_id = 1
+
+
+
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        global session_id
+        if not self.get_secure_cookie("session"):
+            self.set_secure_cookie("session",str(session_id))
+            session_id = session_id + 1
+            self.write("Your session got a new session!")
+        else:
+            self.write("Your session was set!")
+
+application = tornado.web.Application([
+    (r"/", MainHandler),
+], cookie_secret="SECRET_DONT_LEAK")
+
+def main():
+    application.listen(8888)
+    tornado.ioloop.IOLoop.current().start()
+
+if __name__ == "__main__":
+    main()
+```
+![image](https://github.com/15529343201/Tornado/blob/master/image/7-5-1.PNG)<br>
+![image](https://github.com/15529343201/Tornado/blob/master/image/7-5-2.PNG)<br>
+&emsp;&emsp;本例网站只提供了一个根目录页面,解析其关键点如下。
+
+ - 在tornado.web.Application对象初始化时赋予cookie_secret参数,该参数值是一个字符串,用于保存本网站Cookie加密时的密钥。
+ - 在需要读取Cookie的地方用RequestHandler.get_secure_cookie替换原来的RequestHandler.get_cookie调用。
+ - 在需要写入Cookie的地方用RequestHandler.get_secure_cookie替换原来的RequestHandler.set_cookie调用。
+&emsp;&emsp;**注意:cookie_secret参数值是Cookie的加密密钥,需要做好保护工作,不能泄露给外部人员。**
