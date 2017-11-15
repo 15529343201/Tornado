@@ -566,7 +566,7 @@ if __name__ == "__main__":
  - 在需要写入Cookie的地方用RequestHandler.get_secure_cookie替换原来的RequestHandler.set_cookie调用。<br>
 &emsp;&emsp;**注意:cookie_secret参数值是Cookie的加密密钥,需要做好保护工作,不能泄露给外部人员。**
 ### **2.用户身份认证**
-&emsp;&emsp;在Tornado的RequestHandler类中有一个current_user属性用于保存当前请求的用户名。RequestHandler.current_user的默认值是None,在get(),post()等处理函数中可以随时读取该属性以获得当前的用户名。RequestHandler.current_user是一个只读属性,所以开发者需要重载RequestHandler.get_current_user()函数以设置该属性值。
+&emsp;&emsp;在Tornado的RequestHandler类中有一个current_user属性用于保存当前请求的用户名。RequestHandler.current_user的默认值是None,在get(),post()等处理函数中可以随时读取该属性以获得当前的用户名。RequestHandler.current_user是一个只读属性,所以开发者需要重载RequestHandler.get_current_user()函数以设置该属性值。<br>
 &emsp;&emsp;下面是使用RequestHandler.current_user属性及RequestHandler.get_current_user()方法来实现的用户身份控制的例子:
 ```python
 import tornado.web
