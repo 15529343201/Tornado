@@ -256,3 +256,163 @@ class DetailHandler(tornado.web.RequestHandler):
     def get(self,year,month,day,slug):
         self.write("%d-%d-%d %s"%(year,month,day,slug))
 ```
+### **3.RequestHandler**
+#### **1.接入点函数**
+**(1)RequestHandler.initialize()**
+&emsp;&emsp;该方法被子类重写,实现了RequestHandler子类实例的初识化过程。可以为该函数传递参数,参数来源于配置URL映射时的定义。比如:
+```
+from tornado.web import RequestHandler
+from tornado.web import Application
+
+class ProfileHandler(RequestHandler):
+    def initialize(self,database):
+        self.database=database
+        
+    def get(self)
+        pass
+    
+    def post(self)
+        pass
+        
+app=Application([
+    (r'/account,ProfileHandler,dict(database="c:\\example.db")),
+])
+```
+&emsp;&emsp;本例中的initialize有参数database,该参数有Application定义URL映射时以dict方式给出。<br>
+**(2)RequestHandler.prepare(),RequestHandler.on_finish()**
+&emsp;&emsp;prepare()方法用于调用请求处理(get,post等)方法之前的初始化处理。而on_finish()用于请求处理结束后的一些清理工作。这两种方法一个在处理前,一个在处理后,可以根据实际需要进行重写。通常用prepare()方法做资源初始化操作,而用on_finish()方法可做清理对象占用的内存或者关闭数据库连接等工作。<br>
+**(3)HTTP Action处理函数**
+&emsp;&emsp;每个HTTP Action在RequestHandler中都以单独的函数进行处理。
+
+ - RequestHandler.get(*args,**kwargs)
+ - RequestHandler.head(*args,**kwargs)
+ - RequestHandler.post(*args,**kwargs)
+ - RequestHandler.delete(*args,**kwargs)
+ - RequestHandler.patch(*args,**kwargs)
+ - RequestHandler.put(*args,**kwargs)
+ - RequestHandler.options(*args,**kwargs)
+
+&emsp;&emsp;每个处理函数都以它们对应的HTTP Action小写的方式命名,此处不再赘述器应用方法。
+#### **2.输入捕获**
+&emsp;&emsp;输入捕获是指在RequestHandler中用于获取客户端输入的工具函数和属性,比如获取URL查询字符串,Post提交参数。
+**(1)RequestHandler.get_argument(name),RequestHandler.get_arguments(name)**
+&emsp;&emsp;都是返回给定参数的值。get_argument获取单个值;而get_arguments是针对参数存在多个值的情况下使用的,返回多个值的列表。<br>
+&emsp;&emsp;用get_argument/get_arguments()方法获取的是URL查询字符串参数与Post提交参数的参数合集。
+**(2)RequestHandler.get_query_argument(name),RequestHandler.get_query_arguments(name)**
+&emsp;&emsp;它们与get_argument,get_arguments的功能类似,但是仅从URL查询参数中获取参数值。
+**(3)RequestHandler.get_body_argument(name),RequestHandler.get_body_arguments(name)**
+&emsp;&emsp;与get_argument,get_arguments功能类似,但是仅从Post提交参数中获取参数值。
+**(4)RequestHandler.get_cookie(name,default=None)**
+&emsp;&emsp;根据Cookie名称获取Cookie值。<br>
+**(5)RequestHandler.request**
+&emsp;&emsp;返回tornado.httputil.HTTPServerRequest对象实例的属性,通过该对象可以获取关于HTTP请求的一切信息,比如:
+```
+import tornado.web
+class DetailHandler(tornado.web.RequestHandler):
+    def get():
+        remote_ip=self.request.remote_ip      #获取客户端ip地址
+        host=self.request.host                #获取请求的主机地址
+```
+&emsp;&emsp;常用的httputil.HTTPServerRequest对象属性
+属性名 | 说明 
+- | :-: | -:
+method | HTTP请求方法,比如GET,POST等
+uri | 客户端请求的uri的完整内容
+path | uri路径名,即不包括查询字符串
+query | uri中的查询字符串
+version | 客户端发送请求时使用的HTTP版本,比如HTTP/1.1
+headers | 以字典方式表达的HTTP Headers
+body | 以字符串方式表达的HTTP消息体
+remote_ip | 客户端的IP地址
+protocol | 请求协议,比如HTTP,HTTPS
+host | 请求消息中的主机名
+arguments | 客户端提交的所有参数
+files | 以字典方式表达的客户端上传的文件,每个文件名对应一个HTTPFile
+cookies | 客户端提交的Cookie字典
+
+#### **3.输出响应函数**
+&emsp;&emsp;输出响应函数是指一组为客户端生成处理结果的工具函数,开发者调用它们以控制URL的处理结果。常用的输出响应函数如下。<br>
+**(1)RequestHandler.set_status(status_code,reason=None)**
+&emsp;&emsp;设置HTTP Response中的返回码。如果有描述性的语句,则可以赋值给reason参数。
+**(2)RequestHandler.set_header(name,value)**
+&emsp;&emsp;以键值对的方式设置HTTP Response中的HTTP头参数。使用set_header配置的Header值将覆盖之前配置的Header,比如:
+```
+import tornado.web
+class DetailHandler(tornado.web.RequestHandler):
+    def get():
+        self.set_header("NUMBER",9)
+        self.set_header("LANGUAGE","France")
+        self.set_header("LANGUAGE","Chinese")
+```
+&emsp;&emsp;本例中的get()函数调用了3次set_header,但是只配置了两个Header参数,最后的HTTP Header中的参数将会是:
+```
+NUMBER:9
+LANGUAGE:Chinese
+```
+**(3)RequestHandler.add_header(name,value)**
+&emsp;&emsp;以键值对的方式设置HTTP Response中的HTTP头参数。与set_header不同的是add_header配置的Header值将不会覆盖之前配置的Header,比如:
+```
+import tornado.web
+class DetailHandler(tornado.web.RequestHandler):
+    def get():
+        self.set_header("NUMBER",8)
+        self.set_header("LANGUAGE","France")
+        self.add_header("LANGUAGE","Chinese")
+```
+&emsp;&emsp;最后HTTP Header中的参数将会是:
+```
+NUMBER:8
+LANGUAGE:France
+LANGUAGE:Chinese
+```
+**(4)RequestHandler.write(chunk)**
+&emsp;&emsp;将给定的块作为HTTP Body发送给客户端。在一般情况下,用本函数输出字符串给客户端。如果给定的块是一个字典,则会将这个块以JSON格式发送给客户端,同时将HTTP Header中的Content_Type设置成application/json。
+**(5)RequestHandler.finish(chunk=None)**
+&emsp;&emsp;本方法通知Tornado:Response的生成工作完成,chunk参数是需要传递给客户端的HTTP body。调用finish()后,Tornado将向客户端发送HTTP Response。本方法适用于对RequestHandler的异步请求处理。<br>
+&emsp;&emsp;**注意**:在同步或协程访问处理的函数中,无需调用finish()函数。
+**(6)ReqeustHandler.render(template_name,**kwargs)**
+&emsp;&emsp;用给定的参数渲染模板,可以在本函数中传入模板文件名称和模板参数,比如:
+```
+import tornado.web
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        items=["Python","C++","Java"]
+        self.render["template.html",title="Tornado Templates",items=items)
+```
+&emsp;&emsp;render()的第一个参数是对模板文件的命名,之后以命名参数的形式传入多个模板参数。
+&emsp;&emsp;Tornado的基本模板语法与Django相同,但是功能弱化,高级过滤器不可用。
+**(7)RequestHandler.redirect(url,permanent=False,status=None)**
+&emsp;&emsp;进行页面重定向。在RequestHandler处理过程中,可以随时调用redirect()函数进行页面重定向,比如:
+```
+import tornado.web
+class LoginHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.render("login.html",next=self.get_argument("next","/"))
+    
+    def post(self):
+        username=self.get_argument("username","")
+        password=self.get_argument("password","")
+        auth=self.db.authenticate(username,password)
+        if auth:
+            self.set_current_user(username)
+            self.redirect(self.get_argument("next",u"/"))
+        else:
+            error_msg=u"?error="+tornado.escape.url_escape("Login incorrect.")
+            self.redirect(u"/login"+error_msg)
+```
+&emsp;&emsp;在本例LoginHandler的post处理函数中,根据验证是否成功将客户端重定向到不同的页面;如果成功则重定向到next参数所指向的URL;如果不成功,则重定向到"/login"页面。
+**(8)RequestHandler.clear()**
+&emsp;&emsp;清空所有在本次请求中之前写入的Header和Body内容。比如:
+```
+import tornado.web
+class DetailHandler(tornado.web.RequestHandler):
+    def get():
+        self.set_header("NUMBER",8)
+        self.clear()
+        self.set_header("LANGUAGE","France")
+```
+&emsp;&emsp;最后的Header中将不包括参数NUMBER。
+**(9)RequestHandler.set_cookie(name,value)**
+&emsp;&emsp;按键/值对设置Response中的Cookie值。
+**(10)RequestHandler.clear_all_cookies(path='/',domain=None)**
+&emsp;&emsp;清空本次请求中的所有Cookie。
