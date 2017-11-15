@@ -314,21 +314,21 @@ class DetailHandler(tornado.web.RequestHandler):
         host=self.request.host                #获取请求的主机地址
 ```
 &emsp;&emsp;常用的httputil.HTTPServerRequest对象属性
-属性名 | 说明 
-- | :-: | -:
-method | HTTP请求方法,比如GET,POST等
-uri | 客户端请求的uri的完整内容
-path | uri路径名,即不包括查询字符串
-query | uri中的查询字符串
-version | 客户端发送请求时使用的HTTP版本,比如HTTP/1.1
-headers | 以字典方式表达的HTTP Headers
-body | 以字符串方式表达的HTTP消息体
-remote_ip | 客户端的IP地址
-protocol | 请求协议,比如HTTP,HTTPS
-host | 请求消息中的主机名
-arguments | 客户端提交的所有参数
-files | 以字典方式表达的客户端上传的文件,每个文件名对应一个HTTPFile
-cookies | 客户端提交的Cookie字典
+| 属性名 | 说明 |
+| - | - |
+| method | HTTP请求方法,比如GET,POST等 |
+| uri | 客户端请求的uri的完整内容 |
+| path | uri路径名,即不包括查询字符串 |
+| query | uri中的查询字符串 |
+| version | 客户端发送请求时使用的HTTP版本,比如HTTP/1.1 |
+| headers | 以字典方式表达的HTTP Headers |
+| body | 以字符串方式表达的HTTP消息体 |
+| remote_ip | 客户端的IP地址 |
+| protocol | 请求协议,比如HTTP,HTTPS |
+| host | 请求消息中的主机名 |
+| arguments | 客户端提交的所有参数 |
+| files | 以字典方式表达的客户端上传的文件,每个文件名对应一个HTTPFile |
+| cookies | 客户端提交的Cookie字典 |
 
 #### **3.输出响应函数**
 &emsp;&emsp;输出响应函数是指一组为客户端生成处理结果的工具函数,开发者调用它们以控制URL的处理结果。常用的输出响应函数如下。<br>
