@@ -565,3 +565,63 @@ if __name__ == "__main__":
  - 在需要读取Cookie的地方用RequestHandler.get_secure_cookie替换原来的RequestHandler.get_cookie调用。
  - 在需要写入Cookie的地方用RequestHandler.get_secure_cookie替换原来的RequestHandler.set_cookie调用。<br>
 &emsp;&emsp;**注意:cookie_secret参数值是Cookie的加密密钥,需要做好保护工作,不能泄露给外部人员。**
+### **2.用户身份认证**
+&emsp;&emsp;在Tornado的RequestHandler类中有一个current_user属性用于保存当前请求的用户名。RequestHandler.current_user的默认值是None,在get(),post()等处理函数中可以随时读取该属性以获得当前的用户名。RequestHandler.current_user是一个只读属性,所以开发者需要重载RequestHandler.get_current_user()函数以设置该属性值。
+&emsp;&emsp;下面是使用RequestHandler.current_user属性及RequestHandler.get_current_user()方法来实现的用户身份控制的例子:
+```python
+import tornado.web
+import tornado.ioloop
+import uuid
+
+dict_sessions = {}
+class BaseHandler(tornado.web.RequestHandler):
+    def get_current_user(self):
+        session_id = self.get_secure_cookie("session_id")
+        return dict_sessions.get(session_id)
+
+
+class MainHandler(BaseHandler):
+    def get(self):
+        if not self.current_user:
+            self.redirect("/login")
+            return
+        name = tornado.escape.xhtml_escape(self.current_user)
+        self.write("Hello, " + name)
+
+class LoginHandler(BaseHandler):
+    def get(self):
+        self.write('<html><body><form action="/login" method="post">'
+                   'Name: <input type="text" name="name">'
+                   '<input type="submit" value="Sign in">'
+                   '</form></body></html>')
+
+    def post(self):
+        if len(self.get_argument("name"))<3:
+            self.redirect("/login")
+        session_id = str(uuid.uuid1())
+        dict_sessions[session_id] = self.get_argument("name")
+        self.set_secure_cookie("session_id", session_id)
+        self.redirect("/")
+
+application = tornado.web.Application([
+    (r"/", MainHandler),
+    (r"/login", LoginHandler),
+], cookie_secret="SECRET_DONT_LEAK")
+
+
+def main():
+    application.listen(8888)
+    tornado.ioloop.IOLoop.current().start()
+    
+
+if __name__ == "__main__":
+    main()
+```
+&emsp;&emsp;本例演示了一个完整的身份认证编程框架,对其代码解析如下。
+
+ - 用全局字典dict_sessions保存已经登录的用户信息,为简单起见,本例只用其保存"会话ID:用户名"的键/值。
+ - 定义公共基类BaseHandler,该类继承自tornado.web.RequestHandler,用于定义本网站所有处理器的公共属性和行为。重载它的get_current_user()函数,其在开发者访问RequestHandler.current_user属性时自动被Tornado调用。该函数首先用get_secure_cookie()获得本次访问的会话ID,然后用会话ID从dict_sessions中获得用户名并返回。
+ - MainHandler类是一个要求用户经过身份认证才能访问的处理器实例。该处理器中的处理函数get()使用了装饰器tornado.web.authenticated,具有该装饰器的处理函数在执行之前根据current_user是否已经被赋值来判断用户的身份认证情况。如果已经被赋值则可以进行正常逻辑,否则自动重定向到网站的登录页面。
+ - LoginHandler类是登录页面处理器,其get()函数用于渲染登录页面,post()函数用于验证是否允许用户登录。本例中只要用户输入的用户名大于等于3个字节即允许用户登录。
+ - 在tornado.web.Application的初始化函数中通过login_url参数给出网站的登录页面地址。改地址被用于tornado.web.authenticated装饰器在发现用户尚未验证时重定向到一个URL。
+ 
