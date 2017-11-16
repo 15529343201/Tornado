@@ -624,4 +624,51 @@ if __name__ == "__main__":
  - MainHandler类是一个要求用户经过身份认证才能访问的处理器实例。该处理器中的处理函数get()使用了装饰器tornado.web.authenticated,具有该装饰器的处理函数在执行之前根据current_user是否已经被赋值来判断用户的身份认证情况。如果已经被赋值则可以进行正常逻辑,否则自动重定向到网站的登录页面。
  - LoginHandler类是登录页面处理器,其get()函数用于渲染登录页面,post()函数用于验证是否允许用户登录。本例中只要用户输入的用户名大于等于3个字节即允许用户登录。
  - 在tornado.web.Application的初始化函数中通过login_url参数给出网站的登录页面地址。改地址被用于tornado.web.authenticated装饰器在发现用户尚未验证时重定向到一个URL。
- 
+### **3.防止跨站攻击**
+&emsp;&emsp;跨站请求伪造(Cross-site request forgery,CSRF或XSRF)是一种对网站的恶意利用。通过CSRF,攻击者可以冒用用户的身份,在用户不知情的情况下执行恶意操作。<br>
+&emsp;&emsp;**1.CSRF攻击原理**
+![image](https://github.com/15529343201/Tornado/blob/master/image/csrf.PNG)<br>
+
+ - 用户首先访问了存在CSRF漏洞的网站Web(A),成功登陆并获取到了Cookie。此后,所有该用户对Web(A)的访问均会携带Web(A)的Cookie,因此被Web(A)认为是有效操作。
+ - 此时用户又访问了带有攻击行为的站点Web(B),而Web(B)的返回页面中带有一个访问Web(A)进行恶意操作的链接,但被伪装成了合法内容。比如如下超链接看上去是一个抽奖信息,实际上却是向Web(A)站点提交提款请求:<br>
+```
+<a href="http://www.site1.com/get_money?amount=500&dest_card=340734569234">
+三百万元大抽奖
+</a>
+```
+ - 用户一旦点击恶意链接,就在不知情的情况下向Web(A)站点发送了请求,因为之前用户在Web(A)进行过登录且尚未退出,所以Web(A)在收到用户的请求和附带的Cookie时将认为该请求是用户发出的正常请求。此时,恶意站点的目的已经达到。
+&emsp;&emsp;**2.用Tornado防范CSRF攻击**
+&emsp;&emsp;为了防范CSRF攻击,要求每个请求包括一个参数值作为令牌来匹配存储在Cookie中的对应值。<br>
+&emsp;&emsp;Tornado应用可以通过一个Cookie头和一个隐藏的HTML表单元素向页面提供令牌。这样,当一个合法页面的表单被提交时,他将包括表单值和已存储的Cookie。如果两者匹配,则Tornado应用认定请求有效。<br>
+&emsp;&emsp;开启Tornado的CSRF防范功能需要两个步骤。<br>
+(1)在实例化tornado.web.Application时传入xsrf_cookies=True参数,即
+```
+application=tornado.web.Application([
+    (r'/',MainHandler),
+    (r'/purchase',PurchaseHandler),
+],
+cookie_secret="DONT_LEAK_SECRET",
+xsrf_cookies=True,
+)
+```
+或者
+```
+settings = [
+    "cookie_secret":"DONT_LEAK_SECRET",
+    "xsrf_cookies":True
+]
+application=tornado.web.Application([
+    (r'/',MainHandler),
+    (r'/login',LoginHandler),
+],**settings)
+```
+(2)在每个具有HTML表单的模板文件中,为所有表单添加xsrf_form_html()函数标签,比如:<br>
+```
+<form action="/login" method="post">
+{% module xsrf_form_html() %}
+<input type="text" name="message"/>
+<input type="submit" value="Post"/>
+</form>
+```
+&emsp;&emsp;这里的{%module xsrf_form_html()%}起到了为表单添加隐藏元素防止跨站请求的作用。<br>
+&emsp;&emsp;Tornado的安全Cookies支持和XSRF防范框架减轻了应用开发者的很多负担。没有它们,开发者需要思考很过防范的细节措施,因此Tornado內建的安全功能也非常有用。
