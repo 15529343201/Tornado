@@ -637,7 +637,7 @@ if __name__ == "__main__":
 </a>
 ```
  - 用户一旦点击恶意链接,就在不知情的情况下向Web(A)站点发送了请求,因为之前用户在Web(A)进行过登录且尚未退出,所以Web(A)在收到用户的请求和附带的Cookie时将认为该请求是用户发出的正常请求。此时,恶意站点的目的已经达到。
-&emsp;&emsp;**2.用Tornado防范CSRF攻击**
+&emsp;&emsp;**2.用Tornado防范CSRF攻击**<br>
 &emsp;&emsp;为了防范CSRF攻击,要求每个请求包括一个参数值作为令牌来匹配存储在Cookie中的对应值。<br>
 &emsp;&emsp;Tornado应用可以通过一个Cookie头和一个隐藏的HTML表单元素向页面提供令牌。这样,当一个合法页面的表单被提交时,他将包括表单值和已存储的Cookie。如果两者匹配,则Tornado应用认定请求有效。<br>
 &emsp;&emsp;开启Tornado的CSRF防范功能需要两个步骤。<br>
