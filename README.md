@@ -671,4 +671,212 @@ application=tornado.web.Application([
 </form>
 ```
 &emsp;&emsp;这里的{%module xsrf_form_html()%}起到了为表单添加隐藏元素防止跨站请求的作用。<br>
-&emsp;&emsp;Tornado的安全Cookies支持和XSRF防范框架减轻了应用开发者的很多负担。没有它们,开发者需要思考很过防范的细节措施,因此Tornado內建的安全功能也非常有用。
+&emsp;&emsp;Tornado的安全Cookies支持和XSRF防范框架减轻了应用开发者的很多负担。没有它们,开发者需要思考很过防范的细节措施,因此Tornado內建的安全功能也非常有用。<br>
+# HTML5 WebSocke概念及应用
+&emsp;&emsp;Tornado的异步特性使得其非常适合服务器的高并发处理,客户端与服务器的持久连接应用架构就是高并发的典型应用。而WebSocket正是在HTTP客户端与服务器之间建立持久连接的HTML5标准技术。<br>
+### **1.WebSocket概念**
+&emsp;&emsp;WebSocket protocol是HTML5定义的一种新的标准协议(RFC6455),它实现了浏览器与服务器的全双工通信(full-duplex)。<br>
+ **1. WebSocket的应用场景**
+&emsp;&emsp;传统的HTTP和HTML技术使用客户端主动向服务器发送请求并获得回复的应用场景。但是随着即时通信需求的增多,这样的通信模型有时并不能满足应用的需求。<br>
+&emsp;&emsp;WebSocket与普通Socket通信类似,它打破了原来HTTP的Request和Response一对一的通信模型,同时打破了服务器只能被动地接受客户端请求的应用场景。下图解释了HTTP+HTML的应用局限性。<br>
+&emsp;&emsp;传统HTTP+HTML方案只适用于客户端主动发出请求的场景,而无法满足服务器端发起的通信要求。也许读者听说过Ajax,Long poll等基于传统HTTP的动态客户端技术,但这些技术无不采用轮询技术,耗费了大量的网络带宽和计算资源。<br>
+&emsp;&emsp;而WebSocket正是为了应对这样的场景而制定的HTML5标准,相对于普通的Socket通信,WebSocket又在应用层定义了基本的交互流程,使得Tornado这样的服务器器框架和JavaScript客户端可以构建标准的Websocket模块。<br>
+&emsp;&emsp;总结WebSocket的特点如下:<br>
+ 
+ 
+ - WebSocket适合服务器端主动推送的场景。
+ - 相对于Ajax和Long poll等技术,WebSocket通信模型更高效
+ - WebSocket仍然与HTTP完成Internet通信。
+ - 因为是HTML5的标准协议,所以不受企业防火墙的拦截。
+
+**2. WebSocket的通信原理**<br>
+&emsp;&emsp;WebSocket的通信原理是在客户端与服务器之间建立TCP持久连接,从而使得当服务器有消息需要推送给客户端时能够进行即时通信。<br>
+&emsp;&emsp;虽然WebSocket不是HTTP,但由于Internet上HTML本身是由HTTP封装并进行传输的,所以WebSocket仍然需要与HTTP进行协作。IETF在RFC6455中定义了基于HTTP链路建立WebSocket信道的标准流程。<br>
+&emsp;&emsp;客户端通过发送如下HTTP Request告诉服务器需要建立一个WebSocket长连接信道:<br>
+```python
+GET /stock_info/?encodin=text HTTP/1.1
+Host:echo.websocket.org
+Origin:http://websocket.org
+Cookie:__token=ubcxx13
+Connection:Upgrade
+Sec-WebSocket-Key:uRovscZjNo1/umbTt5uKmw==
+Upgrade:websocket
+Sec-WebSocket-Version:13
+```
+
+ - HTTP请求谓词:GET
+ - 请求地址:/stock_info
+ - HTTP版本号:1.1
+ - 服务器主机域名:echo.websocket.org
+ - Cookie信息:__token=ubcxx13
+&emsp;&emsp;但是在HTTP Header中出现了4个特殊的字段,它们是:<br>
+```python
+Connection:Upgrade
+Sec-WebSocket-Key:uRovscZjNo1/umbTt5uKmw==
+Upgrade:websocket
+Sec-WebSocket-Version:13
+```
+&emsp;&emsp;这就是WebSocket建立链路的核心,它告诉Web服务器:客户端希望建立一个WebSocket链接,客户端使用的WebSocket版本是13,密钥是``uRovscZjNo1/umbTt5uKmw==``。<br>
+&emsp;&emsp;服务器收到该Request后,如果同意建立WebSocket链接则返回类似如下的Response:<br>
+```python
+HTTP/1.1 101 WebSocket Protocol Handshake
+Date:Fri,10 Feb 2012 17:38:18 GMT
+Connection:Upgrade
+Server:Kaazing Gateway
+Upgrade:WebSocket
+Access-Control-Allow-Origin:http://websocket.org
+Access-Control-Allow-Credentials:true
+Sec-WebSocket-Accept:rLHCkw/SKsO9GAH/ZSFhBATDKrU=
+Access-Control-Allow-Headers:content-type
+```
+&emsp;&emsp;这仍旧是一个标准的HTTP Response,其中与WebSocket相关的Header信息是:<br>
+```python
+Connection:Upgrade
+Upgrade:WebSocket
+Sec-WebSocket-Accept:rLHCkw/SKsO9GAH/ZSFhBATDKrU=
+```
+&emsp;&emsp;前面的两条数据告诉客户端:服务器已经将本地链接转换为WebSocket链接,而Sec-WebSocket-Accept是将客户端发送的Sec-WebSocket-Key加密后产生的数据,已让客户端确认服务器能够正常工作。<br>
+&emsp;&emsp;至此,在客户端与服务器之间已经建立了一个TCP持久长连接,双发已经可以随时向对方发送消息。<br>
+### **2.服务端编程**
+&emsp;&emsp;Tornado定义了tornado.websocket.WebSocketHandler类用于处理WebSocket连接诶的请求,应用开发者应该继承该类并实现其中的``open(),on_message(),on_close()``函数。<br>
+
+ - WebSocketHandler.open()函数:在一个新的WebSocket链接建立时,Tornado框架会调用此函数。在本函数中,开发者可以和在get(),post()等函数中一样用get_argument()函数获取客户端提交的参数,以及用get_secure_cookie/set_secure_cookie操作Cookie等。
+ - WebSocketHandler.on_message(message)函数:建立WebSocket链接后,当收到来自客户端的消息时,Tornado框架会调用本函数。通常,这是服务器端WebSocket编程的核心函数,通过解析收到的消息作出相应的处理。
+ - WebSocketHandler.on_close()函数:当WebSocket链接关闭时,Tornado框架会调用本函数。在本函数中,可以通过访问self.close_code和self.close_reason查询关闭的原因。
+&emsp;&emsp;除了这3个tornado框架自动调用的入口函数,WebSocketHandler还提供了两个开发者主动操作WebSocket的函数。<br>
+
+ - WebSocketHandler.write_message(message,binary=False)函数,用于向与本链接相对应的客户端信息。
+ - WebSocketHandler.close(code=None,reason=None)函数:主动关闭WebSocket链接。其中的code和reason用于告诉客户端链接被关闭的原因。参数code必须是一个数值,而reason是一个字符串。
+&emsp;&emsp;下面是持续为客户端推送时间的Tornado WebSocket程序:<br>
+```python
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
+
+from tornado.options import define, options, parse_command_line
+
+define("port", default=8888, help="run on the given port", type=int)
+
+# we gonna store clients in dictionary..
+clients = dict()
+
+class IndexHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    def get(self):
+        #self.write("This is your response")
+        #self.finish()
+        self.render("index.html")
+
+class MyWebSocketHandler(tornado.websocket.WebSocketHandler):
+    def open(self, *args):
+        self.id = self.get_argument("Id")
+        self.stream.set_nodelay(True)
+        clients[self.id] = {"id": self.id, "object": self}
+
+    def on_message(self, message):        
+        """
+        when we receive some message we want some message handler..
+        for this example i will just print message to console
+        """
+        print "Client %s received a message : %s" % (self.id, message)
+        
+    def on_close(self):
+        if self.id in clients:
+            del clients[self.id]
+            print "Client %s is closed" % (self.id)
+
+app = tornado.web.Application([
+    (r'/', IndexHandler),
+    (r'/websocket', MyWebSocketHandler),
+])
+
+
+import threading
+import time
+def sendTime():
+    import datetime
+    while True:
+        for key in clients.keys():
+            msg = str(datetime.datetime.now())
+            clients[key]["object"].write_message(msg)
+            print "write to client %s: %s" % (key,msg)
+        time.sleep(1)
+
+  
+if __name__ == '__main__':
+    threading.Thread(target=sendTime).start()
+    parse_command_line()
+    app.listen(options.port)
+    tornado.ioloop.IOLoop.instance().start()
+
+```
+&emsp;&emsp;解析上述代码如下。<br>
+
+ - 定义了全局变量字典clients,用于保存所有与服务器建立WebSocket链接的客户端信息。字典的键是客户端id,值是由一个id与相应的WebSocketHandler实例构成的元组(Tuple)。
+ - IndexHandler是一个普通的页面处理器,用于向客户端渲染主页index.html。本页面中包含了WebSocket的客户端程序。
+ - MyWebSocketHandler是本例的核心处理器,继承自tornado.web.WebSocketHandler。其中的open()函数将所有客户端链接保存到clients字典中;on_message()用于显示客户端发来的消息;on_close()用于将已经关闭的WebSocket链接从clients字典中移除。
+ - 函数sendTime()运行在单独的线程中,每隔1秒轮询clients中的所有客户端并通过MyWebSocketHandler.write_message()函数向客户端推送时间消息。
+ - 本例的tornado.web.Application实例中只配置了两个路由,分别指向IndexHandler和MyWebSocketHandler,仍然由Tornado IOLoop启动并运行。
+### **3.客户端编程**
+&emsp;&emsp;由于WebSocket是HTML5的标准之一,所以主流浏览器的Web
+客户端编程语言JavaScript已经支持WebSocket的客户端编程。<br>
+&emsp;&emsp;客户端编程围绕着WebSocket对象展开,在JavaScript中可以通过如下代码初始化WebSocket对象:<br>
+```javascript
+var Socket=new WebSocket(url);
+```
+&emsp;&emsp;在代码中只需给WebSocket构造函数传入服务器的url地址,比如http://mysite.com/point。可以为该对象的如下事件指定处理函数以响应它们。<br>
+
+ - WebSocket.onopen:此事件发生在WebSocket链接建立时。
+ - WebSocket.onmessage:此事件发生在收到了来自服务器的消息时。
+ - WebSocket.onerror:此事件发生在通信过程中有任何差错时。
+ - WebSocket.onclose:此事件发生在与服务器的链接关闭时。
+&emsp;&emsp;除了这些事件处理函数,还可以通过WebSocket对象的两个方法进行主动操作。<br>
+ - WebSocket.send(data):向服务器发送消息。
+ - WebSocket.close():主动关闭现有链接
+&emsp;&emsp;客户端的WebSocket编程示例程序如下:<br>
+```html
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+	
+    </head>
+    <body>
+        <a href="javascript:WebSocketTest()">Run WebSocket</a>
+        <div id="messages" style="height:200px;background:black;color:white;"></div>
+    </body>
+	
+    <script type="text/javascript">
+        var messageContainer = document.getElementById("messages");
+        function WebSocketTest() {
+            if ("WebSocket" in window) {
+                messageContainer.innerHTML = "WebSocket is supported by your Browser!";
+                var ws = new WebSocket("ws://localhost:8888/websocket?Id=12345");
+                ws.onopen = function() {
+                    ws.send("Message to send");
+                };
+                ws.onmessage = function (evt) { 
+                    var received_msg = evt.data;
+                    messageContainer.innerHTML =
+     			  messageContainer.innerHTML+
+  				  "<br/>Message is received:"+received_msg;
+                };
+                ws.onclose = function() { 
+                    messageContainer.innerHTML =
+  				  messageContainer.innerHTML+"<br/>Connection is closed...";
+                };
+            } else {
+                messageContainer.innerHTML = "WebSocket NOT supported by your Browser!";
+            }
+        }
+    </script>
+</html>
+
+```
+&emsp;&emsp;对上述代码解析如下。<br>
+
+ - 客户端页面主体由两部分构成:一个Run WebSocket链接用于让用户启动WebSocket;另一个id=message的<div>标签用于显示服务器端的消息。
+ - 使用JavaScript语句if("WebSocket" in window)可以判断当前浏览器是否支持WebSocket对象。
+ - 如果浏览器支持WebSocket对象,则定义实例ws链接到服务器的WebSocket地址ws://localhost:8888/websocket,并传入表示自己的参数id=12345。然后通过JavaScript语法定义事件onopen,onmessage,onclose的处理函数。除了在onopen事件中客户端向服务器用WebSocket.send()函数发送了消息,其余事件均只将事件结果显示在页面<div>标签中。
+
+ 
